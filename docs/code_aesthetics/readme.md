@@ -1,4 +1,4 @@
-# Clean Code 的函数优化核心理念
+# Clean Code 的函数优化实战
 
 以下是《Clean Code》的函数优化的最重要原则：
 
