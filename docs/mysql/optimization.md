@@ -10,20 +10,17 @@
 
 所以在开发过程中，我推荐尽量把压力给到服务端。
 
-### order by
+下面是一些常见的优化途径：
 
-如果业务不需要分页，请在服务端分页，比如有如下 sql：
-
-```mysql
-select column1,column2 from table_a order by star desc;
-```
-
-可以通过如下方式降低数据库压力
+1. 获取关联表的数据时，不使用 join，在业务层关联（同时还有利于缓存和减少锁的竞争）。下面是一个获取用户的运动天数的关联示例代码:
 
 ```java
-List<AEntity> aList = aDao.selectList();
-aList.sort(Comparator.comparing(AEntity::getStar).reversed());
+List<RecordEntity> list = recordEntityList.stream().filter(e -> user.getId().equals(e.getUserId())).collect(Collectors.toList());
+userVo.setDays(list.size());
+// 关联 list 其他操作等
 ```
+
+2. 业务不需要分页，不要在数据库写 order by，而是在服务端进行 sort。
 
 
 
@@ -39,13 +36,13 @@ aList.sort(Comparator.comparing(AEntity::getStar).reversed());
 
 对于访问数据量很大的请求，尽量通过缓存或者汇总表的方式实现。
 
-> 表报统计全部数据的时候，对于不会变的历史数据可以提前缓存好，只实时计算今天的数据。
+> 报表统计全部数据的时候，对于不会变的历史数据可以提前缓存好，只实时计算今天的数据。
 
 **是否访问了太多列**
 
 使用 ORM 工具，很容易写出 select * 的查询语句，这会让优化器无法完成索引覆盖扫描这类优化，而且要是包含 text 类型的字段，那么传输时间会大大增加。
 
-规矩都是死的，大家要灵活变通。我个人非常不支持禁止使用 select *，尤其在后台页面的开发上，不使用 select  *， 接口的复用性变得很低，影响开发效率。做好代码评审，大致清楚哪些表日后数据增长会比较快，就不会有问题。当然对于对性能要求很高的部分移动端接口，务必按需 select。
+但是规矩都是死的，大家要灵活变通。我个人不支持禁止使用 select *，尤其在后台页面的开发上，不使用 select  *， 接口的复用性变得很低，影响开发效率。做好代码评审，大致清楚哪些表日后数据增长会比较快，就能很大程度的避免问题的出现。当然对于对性能要求很高的部分移动端接口，务必按需 select。
 
 ## 充分利用索引
 
@@ -70,7 +67,9 @@ sport_ground_id = 10 and state = 1;
 
 ## 优化 limit 和 offset 语句
 
-在 offset 很大的情况下， MySQL 服务器层会查询出一大推不需要的数据，最后却返回 limit 数量的数据
+在 offset 很大的情况下， MySQL 服务器层会查询出一大推不需要的数据，最后却返回 limit 数量的数据。
+
+**优化方式1，使用索引覆盖扫描**
 
 ```mysql
 select * from st_record t1 join (select id from st_record order by record_type desc limit 100000, 10 ) t2 using(id);
@@ -79,4 +78,12 @@ select * from st_record t1 join (select id from st_record order by record_type d
 select * from st_record order by record_type desc limit 100000, 10 ;
 # 用时 9s
 ```
+
+这种延迟联接之所以有效，是因为可以在不需要访问行的情况下通过索引找到数据，然后一但找到所需要的行，就将他们与整个表联接，来获得其他需要的列。类似的技术也可以用于带有 limit 子句的联接。
+
+**优化方式2 将 offset 转变为通过 id 过滤**
+
+分页引发的性能问题，其实是 offset 导致的，它会导致 MySQL 扫描大量不需要的行，然后抛弃掉。
+
+所以可以通过前端传递单前页的最大 或 最小 id 来避免 offset。
 
