@@ -1,0 +1,11 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: @artifactId@
+  profiles:
+    active: @profiles.active@
+
+logging:
+  config: classpath:logback-delyed.xml

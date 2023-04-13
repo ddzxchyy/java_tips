@@ -1,4 +1,4 @@
-# MySQL 优化
+# MySQL 常见优化方法
 
 本文不讲 MySQL 的原理，只介绍一些优化 MySQL 查询的手段。
 
@@ -87,3 +87,6 @@ select * from st_record order by record_type desc limit 100000, 10 ;
 
 所以可以通过前端传递单前页的最大 或 最小 id 来避免 offset。
 
+## github
+如果有帮助可以给我点个小星星
+欢迎转载，转载请注明来源  [github](https://github.com/ddzxchyy/java_tips)

@@ -1,0 +1,52 @@
+server:
+  port: 8888
+spring:
+  application:
+    name: @artifactId@
+  profiles:
+    active: @profiles.active@
+  http:
+    encoding:
+      force: true
+      charset: utf-8
+      enabled: true
+  cloud:
+    gateway:
+      filter:
+        remove-hop-by-hop:
+          headers:
+            # 以下是去掉网关默认去掉的请求响应头
+            - trailer
+            - te
+            - keep-alive
+            - transfer-encoding
+            - upgrade
+            - proxy-authenticate
+            - connection
+            - proxy-authorization
+            - x-application-context
+            # 以下是去掉服务层面定义的跨域
+            - access-control-allow-credentials
+            - access-control-allow-headers
+            - access-control-allow-methods
+            - access-control-allow-origin
+            - access-control-max-age
+            - vary
+      globalcors:
+        corsConfigurations:
+          '[/**]':
+            allowCredentials: true
+            exposedHeaders: "Content-Disposition,Content-Type,Cache-Control"
+            allowedHeaders: "*"
+            allowedOrigins: "*"
+            allowedMethods: "*"
+      routes:
+        - id: ms-service-route #路由的ID 需要唯一
+          uri: lb://ms-service #匹配后路由地址 lb代表从注册中心获取服务，lb是Load Balance的缩写
+          # 路由（routing）就是通过互联的网络把信息从源地址传输到目的地址的活动
+          predicates: # 路由条件
+            - Path=/ms/**
+logging:
+  level:
+    org.springframework.cloud.gateway: debug
+
