@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 内部请求不要暴露到公网
- * 应该保证除了网关需要暴露到公网，其它请求都只能内网访问
+ * 应该保证除了网关需要暴露到公网，其它服务都只能内网访问
  */
 @RestController
 @RequestMapping("/internal/app/user")
